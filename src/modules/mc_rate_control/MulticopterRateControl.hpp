@@ -63,6 +63,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_thrust_setpoint.h>
 #include <uORB/topics/vehicle_torque_setpoint.h>
+#include <uORB/topics/tilting_angle_setpoint.h>
 
 using namespace time_literals;
 
@@ -108,6 +109,7 @@ private:
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription _vehicle_rates_setpoint_sub{ORB_ID(vehicle_rates_setpoint)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _tilting_angle_setpoint_sub{ORB_ID(tilting_angle_setpoint)};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
@@ -142,6 +144,9 @@ private:
 
 	float _energy_integration_time{0.0f};
 	float _control_energy[4] {};
+
+	float _tilting_angle_sp{0.0f};
+	float _tilt_normalize_factor{0.0f};
 
 	int8_t _landing_gear{landing_gear_s::GEAR_DOWN};
 
@@ -179,6 +184,9 @@ private:
 
 		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _param_mc_bat_scale_en,
 
-		(ParamInt<px4::params::CBRK_RATE_CTRL>) _param_cbrk_rate_ctrl
+		(ParamInt<px4::params::CBRK_RATE_CTRL>) _param_cbrk_rate_ctrl,
+
+		(ParamFloat<px4::params::CA_SV_TL0_MINA>) _param_tilt_min_angle,
+		(ParamFloat<px4::params::CA_SV_TL0_MAXA>) _param_tilt_max_angle
 	)
 };

@@ -53,6 +53,14 @@ MulticopterRateControl::MulticopterRateControl(bool vtol) :
 
 	parameters_updated();
 	_controller_status_pub.advertise();
+	float max_angle = fabs( radians( _param_tilt_max_angle.get() ) );
+	float min_angle = fabs( radians( _param_tilt_min_angle.get() ) );
+
+	/*** MIO ***/
+	//TO DO: correggere il fattore perchè se il limite è 0 va all'infinito/nan
+
+	_tilt_normalize_factor = 0.5f * (max_angle + min_angle)	/ (max_angle * min_angle);
+	/*** MIO ***/
 }
 
 MulticopterRateControl::~MulticopterRateControl()
@@ -171,6 +179,8 @@ MulticopterRateControl::Run()
 
 		// use rates setpoint topic
 		vehicle_rates_setpoint_s vehicle_rates_setpoint{};
+		float compensated_z_sp{0.0f};
+
 
 		if (_vehicle_control_mode.flag_control_manual_enabled && !_vehicle_control_mode.flag_control_attitude_enabled) {
 			// generate the rate setpoint from sticks
@@ -184,7 +194,16 @@ MulticopterRateControl::Run()
 					math::superexpo(manual_control_setpoint.r, _param_mc_acro_expo_y.get(), _param_mc_acro_supexpoy.get())};
 
 				_rates_setpoint = man_rate_sp.emult(_acro_rate_max);
-				_thrust_setpoint = math::constrain(manual_control_setpoint.z, 0.0f, 1.0f);
+
+				/*** MIO ***/
+				_rates_setpoint(1) = 0.0;
+				_tilting_angle_sp = man_rate_sp(1);
+
+				compensated_z_sp = manual_control_setpoint.z * (2 - cosf(_tilting_angle_sp*_tilt_normalize_factor));
+
+				/*** MIO ***/
+
+				_thrust_setpoint = math::constrain(compensated_z_sp, 0.0f, 1.0f);//math::constrain(manual_control_setpoint.z, 0.0f, 1.0f);
 
 				// publish rate setpoint
 				vehicle_rates_setpoint.roll           = _rates_setpoint(0);
@@ -203,6 +222,26 @@ MulticopterRateControl::Run()
 				_rates_setpoint(0) = PX4_ISFINITE(vehicle_rates_setpoint.roll)  ? vehicle_rates_setpoint.roll  : rates(0);
 				_rates_setpoint(1) = PX4_ISFINITE(vehicle_rates_setpoint.pitch) ? vehicle_rates_setpoint.pitch : rates(1);
 				_rates_setpoint(2) = PX4_ISFINITE(vehicle_rates_setpoint.yaw)   ? vehicle_rates_setpoint.yaw   : rates(2);
+
+				/*** MIO ***/
+				_tilting_angle_sp = vehicle_rates_setpoint.tilt_servo;
+				// PX4_INFO("fabs max: %f \n", (double)fabs( radians( _param_tilt_max_angle.get() ) ));
+				// PX4_INFO("fabs min: %f \n", (double)fabs( radians( _param_tilt_min_angle.get() ) ));
+				// PX4_INFO("max: %f \n", (double)radians( _param_tilt_max_angle.get() ));
+				// PX4_INFO("min: %f \n", (double)radians( _param_tilt_min_angle.get() ));
+				// PX4_INFO("tilt_angle: %f \n", (double)_tilting_angle_sp);
+				// PX4_INFO("factor: %f \n", (double)_tilt_normalize_factor);
+				// PX4_INFO("factor*sp: %f \n", (double)(_tilting_angle_sp*_tilt_normalize_factor));
+				// PX4_INFO("cos: %f \n", (double)cosf(_tilting_angle_sp*_tilt_normalize_factor));
+				// PX4_INFO("thrust: %f \n", (double)vehicle_rates_setpoint.thrust_body[2]);
+
+				compensated_z_sp = vehicle_rates_setpoint.thrust_body[2] * (2 - cosf(_tilting_angle_sp*fabs( radians( _param_tilt_max_angle.get() ) )));
+
+				// PX4_INFO("compensated: %f \n", (double)compensated_z_sp);
+				// PX4_INFO("\n---\n");
+				// _thrust_setpoint = -compensated_z_sp;
+				/*** MIO ***/
+
 				_thrust_setpoint = -vehicle_rates_setpoint.thrust_body[2];
 			}
 		}
@@ -237,6 +276,10 @@ MulticopterRateControl::Run()
 				_rate_control.setSaturationStatus(saturation_positive, saturation_negative);
 			}
 
+			// tilting_angle_setpoint_s tilting_angle_sp;
+			// _tilting_angle_setpoint_sub.update(&tilting_angle_sp);
+
+
 			// run rate controller
 			const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
 
@@ -253,6 +296,7 @@ MulticopterRateControl::Run()
 			actuators.control[actuator_controls_s::INDEX_YAW] = PX4_ISFINITE(att_control(2)) ? att_control(2) : 0.0f;
 			actuators.control[actuator_controls_s::INDEX_THROTTLE] = PX4_ISFINITE(_thrust_setpoint) ? _thrust_setpoint : 0.0f;
 			actuators.control[actuator_controls_s::INDEX_LANDING_GEAR] = _landing_gear;
+			actuators.control[actuator_controls_s::INDEX_FLAPS] = PX4_ISFINITE(_tilting_angle_sp) ? _tilting_angle_sp : 0.0f;
 			actuators.timestamp_sample = angular_velocity.timestamp_sample;
 
 			if (!_vehicle_status.is_vtol) {

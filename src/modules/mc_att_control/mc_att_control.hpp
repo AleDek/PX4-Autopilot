@@ -134,6 +134,10 @@ private:
 
 	uint8_t _quat_reset_counter{0};
 
+	/*** MIO ***/
+	float _tilt_servo_sp{0.0f};
+	/*** MIO ***/
+
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::MC_AIRMODE>)         _param_mc_airmode,
 		(ParamFloat<px4::params::MC_MAN_TILT_TAU>)  _param_mc_man_tilt_tau,

@@ -52,6 +52,7 @@
 #include <ActuatorEffectivenessMCTilt.hpp>
 #include <ActuatorEffectivenessCustom.hpp>
 #include <ActuatorEffectivenessHelicopter.hpp>
+#include <ActuatorEffectivenessTiltingMultirotor.hpp>
 
 #include <ControlAllocation.hpp>
 #include <ControlAllocationPseudoInverse.hpp>
@@ -153,6 +154,7 @@ private:
 		MULTIROTOR_WITH_TILT = 8,
 		CUSTOM = 9,
 		HELICOPTER = 10,
+		TILTING_MULTIROTOR = 11,
 	};
 
 	enum class FailureMode {

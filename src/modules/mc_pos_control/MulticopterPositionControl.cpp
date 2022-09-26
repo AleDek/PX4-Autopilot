@@ -532,8 +532,32 @@ void MulticopterPositionControl::Run()
 			// Publish attitude setpoint output
 			vehicle_attitude_setpoint_s attitude_setpoint{};
 			_control.getAttitudeSetpoint(attitude_setpoint);
+
+			// //Publish tilting angle setpoint
+			// float tilt_angle_setpoint;
+			// float normalize_factor;
+
+			// normalize_factor = 0.5f * (fabs(_param_tilt_max_angle.get()) + fabs(_param_tilt_min_angle.get()))
+			// 		   /fabs(_param_tilt_max_angle.get()*_param_tilt_min_angle.get());
+
+			// tilt_angle_setpoint = attitude_setpoint.pitch_body;
+			// attitude_setpoint.pitch_body = 0.0;
+
+			// if( tilt_angle_setpoint > _param_tilt_max_angle.get() )
+			// 	tilt_angle_setpoint = _param_tilt_max_angle.get();
+			// else if( tilt_angle_setpoint < _param_tilt_min_angle.get() )
+			// 	tilt_angle_setpoint = _param_tilt_min_angle.get();
+
+			// tilting_angle_setpoint_s tilting_angle_sp{};
+
+			// tilting_angle_sp.angle = tilt_angle_setpoint * normalize_factor;
+
 			attitude_setpoint.timestamp = hrt_absolute_time();
+			// tilting_angle_sp.timestamp = hrt_absolute_time();
+
 			_vehicle_attitude_setpoint_pub.publish(attitude_setpoint);
+			// _tilting_angle_sp_pub.publish(tilting_angle_sp);
+			// PX4_INFO("des_pitch: %f \n", (double)attitude_setpoint.pitch_body);
 
 		} else {
 			// an update is necessary here because otherwise the takeoff state doesn't get skipped with non-altitude-controlled modes

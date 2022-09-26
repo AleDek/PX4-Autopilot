@@ -156,7 +156,12 @@ MulticopterAttitudeControl::generate_attitude_setpoint(const Quatf &q, float dt,
 	Quatf q_sp_rpy = AxisAnglef(v(0), v(1), 0.f);
 	Eulerf euler_sp = q_sp_rpy;
 	attitude_setpoint.roll_body = euler_sp(0);
-	attitude_setpoint.pitch_body = euler_sp(1);
+	attitude_setpoint.pitch_body = 0.0; //euler_sp(1);
+
+	/*** MIO ***/
+	_tilt_servo_sp = _manual_control_setpoint.x * _man_tilt_max; //euler_sp(1);
+	/*** MIO ***/
+
 	// The axis angle can change the yaw as well (noticeable at higher tilt angles).
 	// This is the formula by how much the yaw changes:
 	//   let a := tilt angle, b := atan(y/x) (direction of maximum tilt)
@@ -197,7 +202,9 @@ MulticopterAttitudeControl::generate_attitude_setpoint(const Quatf &q, float dt,
 		// R_tilt is computed from_euler; only true if cos(roll) not equal zero
 		// -> valid if roll is not +-pi/2;
 		attitude_setpoint.roll_body = -asinf(z_roll_pitch_sp(1));
+
 		attitude_setpoint.pitch_body = atan2f(z_roll_pitch_sp(0), z_roll_pitch_sp(2));
+
 	}
 
 	/* copy quaternion setpoint to attitude setpoint topic */
@@ -211,6 +218,7 @@ MulticopterAttitudeControl::generate_attitude_setpoint(const Quatf &q, float dt,
 
 	// update attitude controller setpoint immediately
 	_attitude_control.setAttitudeSetpoint(q_sp, attitude_setpoint.yaw_sp_move_rate);
+
 	_thrust_setpoint_body = Vector3f(attitude_setpoint.thrust_body);
 	_last_attitude_setpoint = attitude_setpoint.timestamp;
 }
@@ -346,6 +354,10 @@ MulticopterAttitudeControl::Run()
 			rates_setpoint.yaw = rates_sp(2);
 			_thrust_setpoint_body.copyTo(rates_setpoint.thrust_body);
 			rates_setpoint.timestamp = hrt_absolute_time();
+
+			/*** MIO ***/
+			rates_setpoint.tilt_servo = _tilt_servo_sp;
+			/*** MIO ***/
 
 			_vehicle_rates_setpoint_pub.publish(rates_setpoint);
 		}

@@ -149,6 +149,8 @@ px4_add_romfs_files(
 	# [22000, 22999] Reserve for custom models
 
 	24001_dodeca_cox
+	25001_generic_tilting_multirotor
+	25002_koala_tilting_octo_H
 
 	50000_generic_ground_vehicle
 	50003_aion_robotics_r1_rover

@@ -56,6 +56,7 @@ matrix::Vector3f AttitudeControl::update(const Quatf &q) const
 {
 	Quatf qd = _attitude_setpoint_q;
 
+
 	// calculate reduced desired attitude neglecting vehicle's yaw to prioritize roll and pitch
 	const Vector3f e_z = q.dcm_z();
 	const Vector3f e_z_d = qd.dcm_z();
@@ -86,6 +87,7 @@ matrix::Vector3f AttitudeControl::update(const Quatf &q) const
 	// using sin(alpha/2) scaled rotation axis as attitude error (see quaternion definition by axis angle)
 	// also taking care of the antipodal unit quaternion ambiguity
 	const Vector3f eq = 2.f * qe.canonical().imag();
+	// PX4_INFO("pitch_error: %f \n", (double)eq(1) );
 
 	// calculate angular rates setpoint
 	matrix::Vector3f rate_setpoint = eq.emult(_proportional_gain);
