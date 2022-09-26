@@ -74,6 +74,7 @@ px4_add_romfs_files(
 	3011_hexarotor_x
 
 	4001_x500
+	4229_baby_k
 
 	17001_tf-g1
 	17002_tf-g2
